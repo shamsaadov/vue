@@ -1,26 +1,32 @@
 <template>
   <div style="position: relative">
-    <v-stage ref="stage" :config="stageConfig">
-      <v-layer ref="layer">
-        <v-image :config="imageConfig"></v-image>
-        <template v-for="(annotation, index) in annotations">
-          <v-line :config="annotation.arrowConfig"></v-line>
-          <v-text
-            :config="getTextConfig(annotation, index)"
-            @mousedown="startEditText(annotation, $event)"
-          ></v-text>
-        </template>
-      </v-layer>
-    </v-stage>
-    <input
-      ref="input"
-      type="text"
-      :style="{ display: editing ? 'block' : 'none', zIndex: 1000 }"
-      v-model="editingText"
-      @blur="endEditText"
-      @keydown.enter="endEditText"
-      style="position: absolute"
-    />
+      <v-stage ref="stage" :config="stageConfig">
+          <v-layer ref="layer">
+              <v-image :config="imageConfig"></v-image>
+              <v-line
+                      v-for="(annotation, index) in annotations"
+                      :key="index"
+                      :config="annotation.arrowConfig"
+              ></v-line>
+          </v-layer>
+      </v-stage>
+      <div class="annotation">
+          <div v-for="(annotation, index) in annotations" :key="index" >
+             <div style="display: flex">
+                 <p><strong>{{ index + 1 }})</strong></p>
+                 <p v-if="!annotation.editing" @click="startEditText(annotation, $event)">{{ annotation.textConfig.text }}</p>
+             </div>
+              <input
+                      v-if="annotation.editing"
+                      type="text"
+                      v-model="annotation.textConfig.text"
+                      @blur="endEditText(annotation)"
+                      @keydown.enter="endEditText(annotation)"
+              />
+              <button @click="deleteAnnotation(index)">Удалить</button>
+              <button @click="toggleEdit(annotation)">{{ annotation.editing ? 'Сохранить' : 'Редактировать' }}</button>
+          </div>
+      </div>
   </div>
 </template>
 
@@ -64,43 +70,47 @@ export default {
         });
       };
     },
-    startDrawing() {
-      if (this.editing) return;
-      this.drawing = true;
-      const stage = this.$refs.stage.getStage();
-      const pos = stage.getPointerPosition();
-      this.startPoint = { x: pos.x, y: pos.y };
+      startDrawing(event) {
+          if (this.editingAnnotation) return;
+          this.drawing = true;
+          const stage = this.$refs.stage.getStage();
+          const pos = stage.getPointerPosition();
+          this.startPoint = { x: pos.x, y: pos.y };
 
-      const arrowConfig = {
-        points: [
-          this.startPoint.x,
-          this.startPoint.y,
-          this.startPoint.x,
-          this.startPoint.y,
-        ],
-        stroke: "blue",
-        strokeWidth: 3,
-        pointerLength: 10,
-        pointerWidth: 10,
-        tension: 0,
-        draggable: false,
-      };
+          const arrowConfig = {
+              points: [
+                  this.startPoint.x,
+                  this.startPoint.y,
+                  this.startPoint.x,
+                  this.startPoint.y,
+              ],
+              stroke: "blue",
+              strokeWidth: 3,
+              pointerLength: 10,
+              pointerWidth: 10,
+              tension: 0,
+              draggable: false,
+          };
 
-      const textConfig = {
-        x: 10,
-        y: 10 + 30 * this.annotations.length,
-        text: "Нажми на меня",
-        fontSize: 18,
-        draggable: false,
-      };
+          const textConfig = {
+              x: 10,
+              y: 10 + 30 * this.annotations.length,
+              text: "Нажми на меня",
+              fontSize: 18,
+              draggable: false,
+              editing: false,
+          };
 
-      this.annotations.push({
-        id: Date.now(),
-        arrowConfig,
-        textConfig,
-      });
-    },
-    draw(event) {
+          this.annotations.push({
+              id: Date.now(),
+              arrowConfig,
+              textConfig,
+          });
+      },
+      deleteAnnotation(index) {
+          this.annotations.splice(index, 1);
+      },
+      draw(event) {
       if (!this.startPoint || this.editing) return;
       const stage = this.$refs.stage.getStage();
       const pos = stage.getPointerPosition();
@@ -125,7 +135,12 @@ export default {
         inputElement.focus();
       }
     },
-
+      removeAnnotation(annotation) {
+          const index = this.annotations.findIndex(a => a.id === annotation.id);
+          if (index !== -1) {
+              this.annotations.splice(index, 1);
+          }
+      },
     stopDrawing() {
       if (this.editing) return;
       const currentAnnotation = this.annotations[this.annotations.length - 1];
@@ -141,35 +156,21 @@ export default {
       this.startPoint = null;
       this.drawing = false;
     },
+      toggleEdit(annotation) {
+          annotation.editing = !annotation.editing;
+          if (!annotation.editing) {
+              this.endEditText(annotation);
+          }
+      },
+      startEditText(annotation, event) {
+          annotation.editing = true;
+          this.editingAnnotation = annotation;
+      },
+      endEditText(annotation) {
+          annotation.editing = false;
+          this.editingAnnotation = null;
+      },
 
-    startEditText(annotation, event) {
-      const nativeEvent = event.evt;
-      nativeEvent.stopPropagation();
-      nativeEvent.preventDefault();
-
-      if (this.drawing) return;
-
-      this.editing = true;
-      this.editingText = annotation.textConfig.text;
-      this.editingAnnotation = annotation;
-      const inputElement = this.$refs.input;
-      inputElement.style.left = nativeEvent.clientX + "px";
-      inputElement.style.top = nativeEvent.clientY + "px";
-      inputElement.style.display = "block";
-      inputElement.focus();
-    },
-
-    endEditText() {
-      this.editing = false;
-      if (this.editingAnnotation) {
-        this.editingAnnotation.textConfig.text =
-          this.editingText.trim().length === 0
-            ? "Введите примечание"
-            : this.editingText;
-        this.editingAnnotation = null;
-      }
-      this.$refs.input.style.display = "none";
-    },
 
     logAnnotations() {
       console.log("Annotations:");
@@ -190,3 +191,37 @@ export default {
   },
 };
 </script>
+
+<style>
+.annotation {
+    position: absolute;
+    top: 10px;
+}
+button {
+    color: white;
+    font-size: 16px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+button:hover {
+    opacity: 0.8;
+}
+
+button:nth-child(3) {
+    background-color: red;
+}
+
+button:nth-child(3) {
+    background-color: #ff0000;
+}
+
+
+button:nth-child(4) {
+    background-color: blue;
+}
+
+</style>
