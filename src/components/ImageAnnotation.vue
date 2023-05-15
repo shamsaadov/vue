@@ -105,6 +105,7 @@ export default {
       startDrawing(event) {
           if (this.editingAnnotation) return;
           if (this.movingEnd) return;
+          if (this.editingAnnotation || this.movingEnd || this.movingStart) return;
           this.drawing = true;
           const stage = this.$refs.stage.getStage();
           const pos = stage.getPointerPosition();
