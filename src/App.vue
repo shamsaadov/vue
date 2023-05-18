@@ -1,6 +1,5 @@
 <template>
   <div id="app">
-    123123
     <ImageAnnotation />
   </div>
 </template>

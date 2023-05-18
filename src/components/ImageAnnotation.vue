@@ -7,7 +7,10 @@
                       v-for="(annotation, index) in annotations"
                       :key="index"
                       :config="annotation.arrowConfig"
+                      @mouseover.native="onLineMouseover(index)"
+                      @mouseout.native="onLineMouseout"
               ></v-line>
+
               <v-circle
                       v-for="(annotation, index) in annotations"
                       :key="`start-${index}`"
@@ -31,7 +34,7 @@
           </v-layer>
       </v-stage>
       <div class="annotation">
-          <div v-for="(annotation, index) in annotations" :key="index" >
+          <div v-for="(annotation, index) in annotations" :key="index"  :class="{ 'highlighted': index === hoveredIndex }" >
              <div style="display: flex">
                  <p><strong>{{ index + 1 }})</strong></p>
                  <p v-if="!annotation.editing" @click="startEditText(annotation, $event)">{{ annotation.textConfig.text }}</p>
@@ -53,11 +56,13 @@
 <script>
 import Konva from "konva";
 import img from "../assets/vue.png";
+import gql from "graphql-tag";
 
 export default {
   data() {
     return {
-      movingEnd: null,
+        movingEnd: null,
+        hoveredIndex: null,
         movingStart: null,
       stageConfig: {
         width: window.innerWidth,
@@ -96,7 +101,6 @@ export default {
       startMovingEnd(annotation) {
           this.movingEnd = annotation;
       },
-
 
       stopMovingEnd() {
           this.movingEnd = null;
@@ -138,7 +142,7 @@ export default {
           const textConfig = {
               x: 10,
               y: 10 + 30 * this.annotations.length,
-              text: "Нажми на меня",
+              text: "Примечание",
               fontSize: 18,
               draggable: false,
               editing: false,
@@ -196,32 +200,11 @@ export default {
           this.movingStart = null;
       },
 
-      showInput(annotation, event) {
-      if (!this.drawing) {
-        this.editing = true;
-        this.editingText = annotation.textConfig.text;
-        this.editingAnnotation = annotation;
-        const inputElement = this.$refs.input;
-        inputElement.style.left = event.clientX + "px";
-        inputElement.style.top = event.clientY + "px";
-        inputElement.style.display = "block";
-        inputElement.focus();
-      }
-    },
-
-      removeAnnotation(annotation) {
-          const index = this.annotations.findIndex(a => a.id === annotation.id);
-          if (index !== -1) {
-              this.annotations.splice(index, 1);
-          }
-      },
-
       stopDrawing() {
           this.startPoint = null;
           this.movingEnd = null;
           this.movingStart = null;
       },
-
 
       toggleEdit(annotation) {
           annotation.editing = !annotation.editing;
@@ -240,28 +223,22 @@ export default {
           this.editingAnnotation = null;
       },
 
-      logAnnotations() {
-      console.log("Annotations:");
-      this.annotations.forEach((annotation, index) => {
-        console.log(`Annotation ${index + 1}:`);
-        console.log(`x: ${annotation.textConfig.x}`);
-        console.log(`y: ${annotation.textConfig.y}`);
-        console.log(`Text: ${annotation.textConfig.text}`);
-      });
-    },
+      onLineMouseover(index) {
+          this.hoveredIndex = index;
+      },
 
-      getTextConfig(annotation, index) {
-      return {
-        ...annotation.textConfig,
-        x: 10,
-        y: 10 + 30 * index,
-      };
-    },
+      onLineMouseout() {
+          this.hoveredIndex = null;
+      },
   },
 };
 </script>
 
 <style>
+
+.highlighted {
+    background-color: yellow;
+}
 .annotation {
     position: absolute;
     top: 10px;
