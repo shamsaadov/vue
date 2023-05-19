@@ -1,55 +1,81 @@
 <template>
   <div style="position: relative">
-      <v-stage ref="stage" :config="stageConfig">
-          <v-layer ref="layer">
-              <v-image :config="imageConfig"></v-image>
-              <v-line
-                      v-for="(annotation, index) in annotations"
-                      :key="index"
-                      :config="annotation.arrowConfig"
-                      @mouseover.native="onLineMouseover(index)"
-                      @mouseout.native="onLineMouseout"
-              ></v-line>
+    <v-stage ref="stage" :config="stageConfig">
+      <v-layer ref="layer">
+        <v-image :config="imageConfig"></v-image>
+        <v-line
+          v-for="(annotation, index) in annotations"
+          :key="index"
+          :config="annotation.arrowConfig"
+          @mouseover.native="onLineMouseover(index)"
+          @mouseout.native="onLineMouseout"
+        ></v-line>
 
-              <v-circle
-                      v-for="(annotation, index) in annotations"
-                      :key="`start-${index}`"
-                      :config="annotation.startCircleConfig"
-                      @mouseover="changeCircleColor(annotation.startCircleConfig, 'green')"
-                      @mouseout="changeCircleColor(annotation.startCircleConfig, 'red')"
-                      @mousedown="startMovingStart(annotation)"
-                      @mouseup="stopMovingStart"
-              ></v-circle>
+        <v-circle
+          v-for="(annotation, index) in annotations"
+          :key="`start-${index}`"
+          :config="annotation.startCircleConfig"
+          @mouseover="changeCircleColor(annotation.startCircleConfig, 'green')"
+          @mouseout="changeCircleColor(annotation.startCircleConfig, 'red')"
+          @mousedown="startMovingStart(annotation)"
+          @mouseup="stopMovingStart"
+        ></v-circle>
 
-              <v-circle
-                      v-for="(annotation, index) in annotations"
-                      :key="`end-${index}`"
-                      :config="annotation.endCircleConfig"
-                      @mouseover="changeCircleColor(annotation.endCircleConfig, 'green')"
-                      @mouseout="changeCircleColor(annotation.endCircleConfig, 'red')"
-                      @mousedown="startMovingEnd(annotation)"
-                      @mouseup="stopMovingEnd"
-              ></v-circle>
-
-          </v-layer>
-      </v-stage>
-      <div class="annotation">
-          <div v-for="(annotation, index) in annotations" :key="index"  :class="{ 'highlighted': index === hoveredIndex }" >
-             <div style="display: flex">
-                 <p><strong>{{ index + 1 }})</strong></p>
-                 <p v-if="!annotation.editing" @click="startEditText(annotation, $event)">{{ annotation.textConfig.text }}</p>
-             </div>
-              <input
-                      v-if="annotation.editing"
-                      type="text"
-                      v-model="annotation.textConfig.text"
-                      @blur="endEditText(annotation)"
-                      @keydown.enter="endEditText(annotation)"
-              />
-              <button @click="deleteAnnotation(index)">Удалить</button>
-              <button @click="toggleEdit(annotation)">{{ annotation.editing ? 'Сохранить' : 'Редактировать' }}</button>
-          </div>
+        <v-circle
+          v-for="(annotation, index) in annotations"
+          :key="`end-${index}`"
+          :config="annotation.endCircleConfig"
+          @mouseover="changeCircleColor(annotation.endCircleConfig, 'green')"
+          @mouseout="changeCircleColor(annotation.endCircleConfig, 'red')"
+          @mousedown="startMovingEnd(annotation)"
+          @mouseup="stopMovingEnd"
+        ></v-circle>
+        <v-text
+          v-for="(annotation, index) in annotations"
+          :key="`text-${index}`"
+          :config="{
+            x: annotation.endCircleConfig.x - 30,
+            y: annotation.endCircleConfig.y - 25,
+            text: annotation.textConfig.text,
+            fontSize: 18,
+            draggable: false,
+          }"
+        ></v-text>
+      </v-layer>
+    </v-stage>
+    <div class="annotation">
+      <div
+        v-for="(annotation, index) in annotations"
+        :key="index"
+        :class="{ highlighted: index === hoveredIndex }"
+      >
+        <div style="display: flex">
+          <p>
+            <strong>{{ index + 1 }})</strong>
+          </p>
+          <p
+            v-if="!annotation.editing"
+            @click="startEditText(annotation, $event)"
+          >
+            {{ annotation.textConfig.text }}
+          </p>
+        </div>
+        <input
+          v-if="annotation.editing"
+          type="text"
+          v-model="annotation.textConfig.text"
+          @blur="endEditText(annotation)"
+          @keydown.enter="endEditText(annotation)"
+        />
+        <button @click="deleteAnnotation(index)">&#128465;</button>
+        <button @click="toggleEdit(annotation)">
+          {{ annotation.editing ? "&#128190;" : "&#9998;" }}
+        </button>
       </div>
+      <button class="btn" @click="toggleDrawingEnabled">
+        {{ drawingEnabled ? "Выключить" : "Включить" }}
+      </button>
+    </div>
   </div>
 </template>
 
@@ -61,12 +87,21 @@ import gql from "graphql-tag";
 export default {
   data() {
     return {
-        movingEnd: null,
-        hoveredIndex: null,
-        movingStart: null,
+      movingEnd: null,
+      drawingEnabled: true,
+      hoveredIndex: null,
+      movingStart: null,
       stageConfig: {
         width: window.innerWidth,
         height: window.innerHeight,
+      },
+      startCircleConfig: {
+        x: 0,
+        y: 0,
+        radius: 10,
+        fill: "blue",
+        stroke: "black",
+        strokeWidth: 1,
       },
       imageConfig: {
         x: 500,
@@ -87,9 +122,10 @@ export default {
     this.$refs.stage.$el.addEventListener("mouseup", this.stopDrawing);
   },
   methods: {
-      loadImage() {
+    loadImage() {
       const imageObj = new Image();
-      imageObj.src = "http://catalog-mtz.ru/api/storage/media/images/q4pigMWyPAxixBcyYgBNnxhZfGp8X41FxFNZBZ8C.jpeg?expires=1683898683&signature=9fbef924b0c8f9284ed8a31e1507f64889083d8152a578ba1a388342fe779bb0";
+      imageObj.src =
+        "http://catalog-mtz.ru/api/storage/media/images/q4pigMWyPAxixBcyYgBNnxhZfGp8X41FxFNZBZ8C.jpeg?expires=1683898683&signature=9fbef924b0c8f9284ed8a31e1507f64889083d8152a578ba1a388342fe779bb0";
       imageObj.onload = () => {
         this.imageConfig.image = imageObj;
         this.$nextTick(() => {
@@ -98,176 +134,191 @@ export default {
       };
     },
 
-      startMovingEnd(annotation) {
-          this.movingEnd = annotation;
-      },
+    startMovingStart(annotation) {
+      this.movingStart = annotation;
+      this.changeCircleColor(annotation.startCircleConfig, "green");
+    },
+    stopMovingStart(annotation) {
+      this.movingStart = null;
+      this.changeCircleColor(annotation.startCircleConfig, "red");
+    },
+    changeCircleColor(circleConfig, color) {
+      circleConfig.fill = color;
+    },
 
-      stopMovingEnd() {
-          this.movingEnd = null;
-      },
+    toggleDrawingEnabled() {
+      this.drawingEnabled = !this.drawingEnabled;
+    },
 
-      startDrawing(event) {
-          if (this.editingAnnotation) return;
-          if (this.movingEnd) return;
-          if (this.editingAnnotation || this.movingEnd || this.movingStart) return;
-          this.drawing = true;
-          const stage = this.$refs.stage.getStage();
-          const pos = stage.getPointerPosition();
-          this.startPoint = { x: pos.x, y: pos.y };
+    startMovingEnd(annotation) {
+      this.movingEnd = annotation;
+    },
 
-          const circleConfig = {
-              x: this.startPoint.x,
-              y: this.startPoint.y,
-              radius: 10,
-              fill: 'red',
-              stroke: 'black',
-              strokeWidth: 1,
-          };
+    stopMovingEnd() {
+      this.movingEnd = null;
+    },
 
-          const arrowConfig = {
-              points: [
-                  this.startPoint.x,
-                  this.startPoint.y,
-                  this.startPoint.x,
-                  this.startPoint.y,
-              ],
-              stroke: "blue",
-              strokeWidth: 3,
-              pointerLength: 10,
-              pointerWidth: 10,
-              tension: 0,
-              draggable: false,
-          };
+    startDrawing(event) {
+      if (this.editingAnnotation) return;
+      if (!this.drawingEnabled) return;
+      if (this.movingEnd) return;
+      if (this.editingAnnotation || this.movingEnd || this.movingStart) return;
+      this.drawing = true;
+      const stage = this.$refs.stage.getStage();
+      const pos = stage.getPointerPosition();
+      this.startPoint = { x: pos.x, y: pos.y };
 
-          const textConfig = {
-              x: 10,
-              y: 10 + 30 * this.annotations.length,
-              text: "Примечание",
-              fontSize: 18,
-              draggable: false,
-              editing: false,
-          };
+      const circleConfig = {
+        x: this.startPoint.x,
+        y: this.startPoint.y,
+        radius: 10,
+        fill: "darkblue",
+        stroke: "darkblue",
+        strokeWidth: 1,
+      };
 
-          this.annotations.push({
-              id: Date.now(),
-              arrowConfig,
-              textConfig,
-              startCircleConfig: circleConfig,
-              endCircleConfig: { ...circleConfig },
-          });
-      },
+      const arrowConfig = {
+        points: [
+          this.startPoint.x,
+          this.startPoint.y,
+          this.startPoint.x,
+          this.startPoint.y,
+        ],
+        stroke: "darkblue",
+        strokeWidth: 3,
+        pointerLength: 10,
+        pointerWidth: 10,
+        tension: 0,
+        draggable: false,
+      };
 
-      changeCircleColor(circleConfig, color) {
-          circleConfig.fill = color;
-      },
+      const textConfig = {
+        x: 10,
+        y: 10 + 30 * this.annotations.length,
+        text: "Примечание",
+        fontSize: 18,
+        draggable: false,
+        editing: false,
+      };
 
-      deleteAnnotation(index) {
-          this.annotations.splice(index, 1);
-      },
+      this.annotations.push({
+        id: Date.now(),
+        arrowConfig,
+        textConfig,
+        startCircleConfig: circleConfig,
+        endCircleConfig: { ...circleConfig },
+      });
+    },
 
-      draw(event) {
-          const stage = this.$refs.stage.getStage();
-          const pos = stage.getPointerPosition();
+    deleteAnnotation(index) {
+      this.annotations.splice(index, 1);
+    },
 
-          if (this.movingEnd) {
-              this.movingEnd.endCircleConfig.x = pos.x;
-              this.movingEnd.endCircleConfig.y = pos.y;
-              this.movingEnd.arrowConfig.points[2] = pos.x;
-              this.movingEnd.arrowConfig.points[3] = pos.y;
-          } else if (this.movingStart) {
-              this.movingStart.startCircleConfig.x = pos.x;
-              this.movingStart.startCircleConfig.y = pos.y;
-              this.movingStart.arrowConfig.points[0] = pos.x;
-              this.movingStart.arrowConfig.points[1] = pos.y;
-          } else if (this.startPoint) {
-              const currentAnnotation = this.annotations[this.annotations.length - 1];
-              currentAnnotation.arrowConfig.points = [
-                  this.startPoint.x,
-                  this.startPoint.y,
-                  pos.x,
-                  pos.y,
-              ];
-              currentAnnotation.endCircleConfig.x = pos.x;
-              currentAnnotation.endCircleConfig.y = pos.y;
-          }
-      },
+    draw(event) {
+      const stage = this.$refs.stage.getStage();
+      const pos = stage.getPointerPosition();
 
-      startMovingStart(annotation) {
-          this.movingStart = annotation;
-      },
+      if (!this.drawingEnabled) return;
+      if (this.movingEnd) {
+        this.movingEnd.endCircleConfig.x = pos.x;
+        this.movingEnd.endCircleConfig.y = pos.y;
+        this.movingEnd.arrowConfig.points[2] = pos.x;
+        this.movingEnd.arrowConfig.points[3] = pos.y;
+      } else if (this.movingStart) {
+        this.movingStart.startCircleConfig.x = pos.x;
+        this.movingStart.startCircleConfig.y = pos.y;
+        this.movingStart.arrowConfig.points[0] = pos.x;
+        this.movingStart.arrowConfig.points[1] = pos.y;
+      } else if (this.startPoint) {
+        const currentAnnotation = this.annotations[this.annotations.length - 1];
+        currentAnnotation.arrowConfig.points = [
+          this.startPoint.x,
+          this.startPoint.y,
+          pos.x,
+          pos.y,
+        ];
+        currentAnnotation.endCircleConfig.x = pos.x;
+        currentAnnotation.endCircleConfig.y = pos.y;
+      }
+    },
+    stopDrawing() {
+      if (!this.drawingEnabled) return;
+      this.startPoint = null;
+      this.movingEnd = null;
+      this.movingStart = null;
+    },
 
-      stopMovingStart() {
-          this.movingStart = null;
-      },
+    toggleEdit(annotation) {
+      annotation.editing = !annotation.editing;
+      if (!annotation.editing) {
+        this.endEditText(annotation);
+      }
+    },
 
-      stopDrawing() {
-          this.startPoint = null;
-          this.movingEnd = null;
-          this.movingStart = null;
-      },
+    startEditText(annotation, event) {
+      annotation.editing = true;
+      this.editingAnnotation = annotation;
+    },
 
-      toggleEdit(annotation) {
-          annotation.editing = !annotation.editing;
-          if (!annotation.editing) {
-              this.endEditText(annotation);
-          }
-      },
+    endEditText(annotation) {
+      annotation.editing = false;
+      this.editingAnnotation = null;
+    },
 
-      startEditText(annotation, event) {
-          annotation.editing = true;
-          this.editingAnnotation = annotation;
-      },
+    changeRectColor(rectConfig, color) {
+      rectConfig.fill = color;
+      if (color === "green") {
+        rectConfig.fill = "darkgray";
+      }
+    },
 
-      endEditText(annotation) {
-          annotation.editing = false;
-          this.editingAnnotation = null;
-      },
+    onLineMouseover(index) {
+      this.hoveredIndex = index;
+    },
 
-      onLineMouseover(index) {
-          this.hoveredIndex = index;
-      },
-
-      onLineMouseout() {
-          this.hoveredIndex = null;
-      },
+    onLineMouseout() {
+      this.hoveredIndex = null;
+    },
   },
 };
 </script>
 
 <style>
-
 .highlighted {
-    background-color: yellow;
+  background-color: yellow;
 }
 .annotation {
-    position: absolute;
-    top: 10px;
+  position: absolute;
+  top: 10px;
 }
 button {
-    color: white;
-    font-size: 16px;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.3s ease;
+  color: white;
+  font-size: 16px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
 button:hover {
-    opacity: 0.8;
+  opacity: 0.8;
 }
 
 button:nth-child(3) {
-    background-color: red;
+  background-color: red;
 }
 
 button:nth-child(3) {
-    background-color: #ff0000;
+  background-color: #ff0000;
 }
-
 
 button:nth-child(4) {
-    background-color: blue;
+  background-color: blue;
 }
 
+.btn {
+  margin-top: 2rem;
+  background-color: #213547;
+}
 </style>
