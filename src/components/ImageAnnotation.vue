@@ -98,7 +98,7 @@ export default {
       startCircleConfig: {
         x: 0,
         y: 0,
-        radius: 10,
+        radius: 25,
         fill: "blue",
         stroke: "black",
         strokeWidth: 1,
@@ -171,7 +171,7 @@ export default {
       const circleConfig = {
         x: this.startPoint.x,
         y: this.startPoint.y,
-        radius: 10,
+        radius: 5,
         fill: "darkblue",
         stroke: "darkblue",
         strokeWidth: 1,
@@ -206,7 +206,7 @@ export default {
         arrowConfig,
         textConfig,
         startCircleConfig: circleConfig,
-        endCircleConfig: { ...circleConfig },
+        endCircleConfig: { ...circleConfig, radius: 10 },
       });
     },
 
