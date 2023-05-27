@@ -1,48 +1,52 @@
 <template>
   <div style="position: relative">
-    <v-stage ref="stage" :config="stageConfig">
-      <v-layer ref="layer">
-        <v-image :config="imageConfig"></v-image>
-        <v-line
-          v-for="(annotation, index) in annotations"
-          :key="index"
-          :config="annotation.arrowConfig"
-          @mouseover.native="onLineMouseover(index)"
-          @mouseout.native="onLineMouseout"
-        ></v-line>
+    <div :class="containerClass">
+      <v-stage ref="stage" :config="stageConfig">
+        <v-layer ref="layer">
+          <v-image :config="imageConfig"></v-image>
+          <v-line
+            v-for="(annotation, index) in annotations"
+            :key="index"
+            :config="annotation.arrowConfig"
+            @mouseover.native="onLineMouseover(index)"
+            @mouseout.native="onLineMouseout"
+          ></v-line>
 
-        <v-circle
-          v-for="(annotation, index) in annotations"
-          :key="`start-${index}`"
-          :config="annotation.startCircleConfig"
-          @mouseover="changeCircleColor(annotation.startCircleConfig, 'green')"
-          @mouseout="changeCircleColor(annotation.startCircleConfig, 'red')"
-          @mousedown="startMovingStart(annotation)"
-          @mouseup="stopMovingStart"
-        ></v-circle>
+          <v-circle
+            v-for="(annotation, index) in annotations"
+            :key="`start-${index}`"
+            :config="annotation.startCircleConfig"
+            @mouseover="
+              changeCircleColor(annotation.startCircleConfig, 'green')
+            "
+            @mouseout="changeCircleColor(annotation.startCircleConfig, 'red')"
+            @mousedown="startMovingStart(annotation)"
+            @mouseup="stopMovingStart"
+          ></v-circle>
 
-        <v-circle
-          v-for="(annotation, index) in annotations"
-          :key="`end-${index}`"
-          :config="annotation.endCircleConfig"
-          @mouseover="changeCircleColor(annotation.endCircleConfig, 'green')"
-          @mouseout="changeCircleColor(annotation.endCircleConfig, 'red')"
-          @mousedown="startMovingEnd(annotation)"
-          @mouseup="stopMovingEnd"
-        ></v-circle>
-        <v-text
-          v-for="(annotation, index) in annotations"
-          :key="`text-${index}`"
-          :config="{
-            x: annotation.endCircleConfig.x - 30,
-            y: annotation.endCircleConfig.y - 25,
-            text: annotation.textConfig.text,
-            fontSize: 18,
-            draggable: false,
-          }"
-        ></v-text>
-      </v-layer>
-    </v-stage>
+          <v-circle
+            v-for="(annotation, index) in annotations"
+            :key="`end-${index}`"
+            :config="annotation.endCircleConfig"
+            @mouseover="changeCircleColor(annotation.endCircleConfig, 'green')"
+            @mouseout="changeCircleColor(annotation.endCircleConfig, 'red')"
+            @mousedown="startMovingEnd(annotation)"
+            @mouseup="stopMovingEnd"
+          ></v-circle>
+          <v-text
+            v-for="(annotation, index) in annotations"
+            :key="`text-${index}`"
+            :config="{
+              x: annotation.endCircleConfig.x - 30,
+              y: annotation.endCircleConfig.y - 25,
+              text: annotation.textConfig.text,
+              fontSize: 18,
+              draggable: false,
+            }"
+          ></v-text>
+        </v-layer>
+      </v-stage>
+    </div>
     <div class="annotation">
       <div
         v-for="(annotation, index) in annotations"
@@ -127,6 +131,15 @@ export default {
     this.$refs.stage.$el.addEventListener("mousemove", this.draw);
     this.$refs.stage.$el.addEventListener("mouseup", this.stopDrawing);
   },
+
+  computed: {
+    containerClass() {
+      return {
+        "crosshair-cursor": this.drawingEnabled,
+      };
+    },
+  },
+
   methods: {
     loadImage() {
       const imageObj = new Image();
@@ -144,10 +157,12 @@ export default {
       this.movingStart = annotation;
       this.changeCircleColor(annotation.startCircleConfig, "green");
     },
+
     stopMovingStart(annotation) {
       this.movingStart = null;
       this.changeCircleColor(annotation.startCircleConfig, "red");
     },
+
     changeCircleColor(circleConfig, color) {
       circleConfig.fill = color;
     },
@@ -335,5 +350,9 @@ export default {
 .btn {
   margin-top: 2rem;
   background-color: #213547;
+}
+
+.crosshair-cursor {
+  cursor: crosshair;
 }
 </style>
