@@ -67,12 +67,18 @@
           @blur="endEditText(annotation)"
           @keydown.enter="endEditText(annotation)"
         />
-        <button @click="deleteAnnotation(index)">&#128465;</button>
-        <button @click="toggleEdit(annotation)">
+        <button id="button_app" @click="deleteAnnotation(index, $event)">
+          &#128465;
+        </button>
+        <button
+          id="button_app"
+          type="button"
+          @click="toggleEdit(annotation, $event)"
+        >
           {{ annotation.editing ? "&#128190;" : "&#9998;" }}
         </button>
       </div>
-      <button class="btn" @click="toggleDrawingEnabled">
+      <button id="button_app" class="btn" @click="toggleDrawingEnabled($event)">
         {{ drawingEnabled ? "Выключить" : "Включить" }}
       </button>
     </div>
@@ -146,7 +152,10 @@ export default {
       circleConfig.fill = color;
     },
 
-    toggleDrawingEnabled() {
+    toggleDrawingEnabled(event) {
+      event.preventDefault();
+      event.stopPropagation();
+
       this.drawingEnabled = !this.drawingEnabled;
     },
 
@@ -210,7 +219,9 @@ export default {
       });
     },
 
-    deleteAnnotation(index) {
+    deleteAnnotation(index, event) {
+      event.preventDefault();
+      event.stopPropagation();
       this.annotations.splice(index, 1);
     },
 
@@ -241,6 +252,7 @@ export default {
         currentAnnotation.endCircleConfig.y = pos.y;
       }
     },
+
     stopDrawing() {
       if (!this.drawingEnabled) return;
       this.startPoint = null;
@@ -248,7 +260,10 @@ export default {
       this.movingStart = null;
     },
 
-    toggleEdit(annotation) {
+    toggleEdit(annotation, event) {
+      event.preventDefault();
+      event.stopPropagation();
+
       annotation.editing = !annotation.editing;
       if (!annotation.editing) {
         this.endEditText(annotation);
@@ -291,7 +306,7 @@ export default {
   position: absolute;
   top: 10px;
 }
-button {
+#button_app {
   color: white;
   font-size: 16px;
   padding: 10px 20px;
@@ -301,19 +316,19 @@ button {
   transition: all 0.3s ease;
 }
 
-button:hover {
+#button_app:hover {
   opacity: 0.8;
 }
 
-button:nth-child(3) {
+#button_app:nth-child(3) {
   background-color: red;
 }
 
-button:nth-child(3) {
+#button_app:nth-child(3) {
   background-color: #ff0000;
 }
 
-button:nth-child(4) {
+#button_app:nth-child(4) {
   background-color: blue;
 }
 
