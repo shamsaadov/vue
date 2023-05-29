@@ -1,0 +1,559 @@
+# This file was generated. Do not edit manually.
+
+schema {
+    query: Query
+    mutation: Mutation
+}
+
+"Node global interface"
+interface Node {
+    "Global identifier that can be used to resolve any Node implementation."
+    gid: ID!
+}
+
+type Cart {
+    lines: [CartLine]
+}
+
+type CartLine {
+    id: Int!
+    product: Product
+    product_id: Int!
+    quantity: Int!
+}
+
+type CartLineResult {
+    success: Boolean!
+}
+
+type Company implements Node {
+    bank_account: String
+    bank_address: String
+    bank_name: String
+    bik: String
+    corr_account: String
+    director_name: String
+    director_post: String
+    gid: ID!
+    id: ID!
+    inn: String
+    kpp: String
+    legal_address: String
+    legal_name: String
+    main_organization: String
+    ogrn: String
+    okpo: String
+    post_address: String
+    short_name: String
+}
+
+type ConfirmOrderPayload {
+    status: String
+}
+
+type DeleteOrderFilePayload {
+    status: String
+}
+
+type DeleteResult {
+    success: Boolean!
+}
+
+type Document implements Node {
+    file: String
+    file_extension: String
+    file_extension_preview: String
+    gid: ID!
+    id: ID
+    name: String
+    products: [Product]
+    updated_at: DateTime
+}
+
+"A paginated list of Document items."
+type DocumentPaginator {
+    "A list of Document items."
+    data: [Document!]!
+    "Pagination information about the list of items."
+    paginatorInfo: PaginatorInfo!
+}
+
+type Entry implements Node {
+    article: String
+    description: String
+    gid: ID!
+    id: ID
+    image: String
+    name: String
+    non_current: Boolean
+    production_status: ProductionStatus
+    slug: String
+}
+
+"A paginated list of Entry items."
+type EntryPaginator {
+    "A list of Entry items."
+    data: [Entry!]!
+    "Pagination information about the list of items."
+    paginatorInfo: PaginatorInfo!
+}
+
+type File {
+    file: String
+    id: ID
+    name: String
+    type: String
+    updated_at: String
+}
+
+type Group {
+    children: [Group]
+    description: String
+    id: ID
+    image(height: Int = 400, width: Int = 400): String
+    in_main: Boolean
+    name: String
+    parent: Group
+    parent_id: Int
+    slug: String
+}
+
+"A paginated list of Group items."
+type GroupPaginator {
+    "A list of Group items."
+    data: [Group!]!
+    "Pagination information about the list of items."
+    paginatorInfo: PaginatorInfo!
+}
+
+type Image {
+    alt: String
+    file: String
+    id: ID
+    name: String
+}
+
+type InfoAgreement implements Node {
+    gid: ID!
+    text: String!
+}
+
+type InfoCopyright implements Node {
+    gid: ID!
+    left_block: String
+    right_block: String
+}
+
+type LoginPayload {
+    token: String
+}
+
+type Mutation {
+    addProductToCart(input: CartLineAddInput!): CartLine!
+    confirmOrder(id: Int!): Order
+    createCompany(company: companyInput!): Company!
+    createOrder(input: OrderInput!): Order
+    deleteCompany(id: ID): DeleteResult!
+    deleteOrderFile(id: Int!, order_id: Int!): DeleteOrderFilePayload
+    login(input: LoginInput): LoginPayload
+    passwordRequest(email: String!): PasswordResetPayload!
+    passwordReset(input: PasswordResetInput): PasswordResetPayload!
+    register(input: RegisterInput): RegisterPayload
+    removeProductFromCart(input: CartLineRemoveInput!): CartLineResult
+    updateCartProduct(input: CartLineUpdateInput!): CartLine!
+    updateCompany(company: companyInput!, id: ID!): Company!
+    updateUser(input: UserUpdate!): UserUpdatePayload
+    verify(input: VerifyInput): VerifyPayload!
+}
+
+type Order {
+    buyer_company: String!
+    code: String
+    comment: String
+    contact_name: String!
+    contact_phone: String!
+    created_at: String
+    delivery_date: String!
+    document_type: String!
+    end_user_of_product: String!
+    files: [OrderFile]
+    id: ID!
+    legal_name: String!
+    payer_company: String!
+    recipient_company: String!
+    status: Int!
+    updated_at: String
+}
+
+type OrderFile {
+    file: String!
+    id: Int!
+    name: String
+}
+
+type OrderLine {
+    id: ID!
+    product_article: String!
+    product_id: Int!
+    product_name: String!
+    quantity: String!
+    recipient_company: String!
+}
+
+"A paginated list of Order items."
+type OrderPaginator {
+    "A list of Order items."
+    data: [Order!]!
+    "Pagination information about the list of items."
+    paginatorInfo: PaginatorInfo!
+}
+
+"Pagination information about the corresponding list of items."
+type PageInfo {
+    "Count of nodes in current request."
+    count: Int
+    "Current page of request."
+    currentPage: Int
+    "When paginating forwards, the cursor to continue."
+    endCursor: String
+    "When paginating forwards, are there more items?"
+    hasNextPage: Boolean!
+    "When paginating backwards, are there more items?"
+    hasPreviousPage: Boolean!
+    "Last page in connection."
+    lastPage: Int
+    "When paginating backwards, the cursor to continue."
+    startCursor: String
+    "Total number of node in connection."
+    total: Int
+}
+
+"Pagination information about the corresponding list of items."
+type PaginatorInfo {
+    "Total count of available items in the page."
+    count: Int!
+    "Current pagination page."
+    currentPage: Int!
+    "Index of first item in the current page."
+    firstItem: Int
+    "If collection has more pages."
+    hasMorePages: Boolean!
+    "Index of last item in the current page."
+    lastItem: Int
+    "Last page number of the collection."
+    lastPage: Int!
+    "Number of items per page in the collection."
+    perPage: Int!
+    "Total items available in the collection."
+    total: Int!
+}
+
+type PasswordResetPayload {
+    status: String
+}
+
+type Product {
+    article: String
+    description: String
+    detail: ProductDetail
+    entries(
+        filter: ProductFilter,
+        "Limits number of fetched elements."
+        first: Int!,
+        "The offset from which elements are returned."
+        page: Int,
+        sorter: ProductSorter
+    ): EntryPaginator
+    fields: [ProductFields!]!
+    files: [File!]!
+    groups: [Group!]!
+    id: ID
+    image: String
+    images: [Image!]!
+    modifications: [Product!]
+    name: String
+    non_current: Boolean
+    note: String
+    production_status: ProductionStatus
+    slug: String
+    spare_parts(
+        filter: ProductFilter,
+        "Limits number of fetched elements."
+        first: Int!,
+        "The offset from which elements are returned."
+        page: Int,
+        sorter: ProductSorter
+    ): SparePartPaginator
+}
+
+type ProductDetail {
+    appointment: String
+    climatic_version: String
+    dimension: String
+    example_entries_for_order: String
+    note: String
+    okp: String
+    reference_document: String
+    special_conditions: String
+    sphere_of_application: String
+    terms_of_use: String
+    weight: String
+}
+
+type ProductFields {
+    id: ID
+    name: String
+    sort_order: Int
+    value: String
+}
+
+"A paginated list of Product items."
+type ProductPaginator {
+    "A list of Product items."
+    data: [Product!]!
+    "Pagination information about the list of items."
+    paginatorInfo: PaginatorInfo!
+}
+
+type ProductionStatus {
+    class: String!
+    color: String!
+    id: ID!
+    name: String!
+}
+
+type Query {
+    agreement: InfoAgreement
+    cart: Int
+    cartLines(orderBy: [OrderByClause!]): [CartLine]!
+    companies: [Company]!
+    company(id: ID!): Company!
+    copyright: InfoCopyright
+    documents(
+        filter: DocumentFilter,
+        "Limits number of fetched elements."
+        first: Int!,
+        "The offset from which elements are returned."
+        page: Int
+    ): DocumentPaginator
+    group(id: Int, slug: String): Group!
+    groups(
+        filter: GroupFilter,
+        "Limits number of fetched elements."
+        first: Int!,
+        "The offset from which elements are returned."
+        page: Int
+    ): GroupPaginator
+    me: User!
+    node(id: ID!): Node
+    order(id: Int): Order!
+    orders(
+        "Limits number of fetched elements."
+        first: Int!,
+        "The offset from which elements are returned."
+        page: Int
+    ): OrderPaginator
+    product(id: Int, slug: String): Product!
+    productionStatuses: [ProductionStatus]!
+    products(
+        filter: ProductFilter,
+        "Limits number of fetched elements."
+        first: Int!,
+        "The offset from which elements are returned."
+        page: Int,
+        sorter: ProductSorter
+    ): ProductPaginator
+}
+
+type RegisterPayload {
+    status: String
+}
+
+type SparePart implements Node {
+    article: String
+    description: String
+    gid: ID!
+    id: ID
+    image: String
+    name: String
+    non_current: Boolean
+    production_status: ProductionStatus
+    slug: String
+}
+
+"A paginated list of SparePart items."
+type SparePartPaginator {
+    "A list of SparePart items."
+    data: [SparePart!]!
+    "Pagination information about the list of items."
+    paginatorInfo: PaginatorInfo!
+}
+
+type User {
+    company_name: String
+    company_position: String
+    created_at: DateTime!
+    email: String!
+    id: ID!
+    name: String!
+    phone: String!
+    updated_at: DateTime!
+}
+
+type UserUpdatePayload {
+    status: String
+}
+
+type VerifyPayload {
+    status: String
+}
+
+enum ProductSortFields {
+    article
+    name
+}
+
+enum SortDirection {
+    asc
+    desc
+}
+
+"The available directions for ordering a list of records."
+enum SortOrder {
+    "Sort records in ascending order."
+    ASC
+    "Sort records in descending order."
+    DESC
+}
+
+"Specify if you want to include or exclude trashed results from a query."
+enum Trashed {
+    "Only return trashed results."
+    ONLY
+    "Return both trashed and non-trashed results."
+    WITH
+    "Only return non-trashed results."
+    WITHOUT
+}
+
+"A date string with format `Y-m-d`, e.g. `2011-05-23`."
+scalar Date
+
+"A datetime string with format `Y-m-d H:i:s`, e.g. `2018-05-23 13:43:32`."
+scalar DateTime
+
+input CartLineAddInput {
+    product_id: Int!
+    quantity: Int!
+}
+
+input CartLineRemoveInput {
+    product_id: Int!
+}
+
+input CartLineUpdateInput {
+    product_id: Int!
+    quantity: Int!
+}
+
+input CompanyFilter {
+    term: String
+}
+
+input DocumentFilter {
+    query: String
+}
+
+input GroupFilter {
+    in_main: Boolean
+    parent_id: Int
+}
+
+input LoginInput {
+    device_name: String!
+    email: String!
+    password: String!
+}
+
+"Allows ordering a list of records."
+input OrderByClause {
+    "The column that is used for ordering."
+    field: String!
+    "The direction that is used for ordering."
+    order: SortOrder!
+}
+
+input OrderInput {
+    additional_number: String
+    buyer_company_id: Int!
+    comment: String
+    contact_email: String!
+    contact_name: String!
+    contact_phone: String!
+    delivery_date: String!
+    document_type: String!
+    end_user_of_product: String!
+    payer_company_id: Int!
+    recipient_company_id: Int!
+}
+
+input PasswordResetInput {
+    email: String!
+    password: String!
+    password_confirmation: String!
+    token: String!
+}
+
+input ProductFilter {
+    group_id: Int
+    group_slug: String
+    is_spare_part: Boolean
+    term: String
+}
+
+input ProductSorter {
+    direction: SortDirection
+    field: ProductSortFields
+}
+
+input RegisterInput {
+    company_name: String!
+    company_position: String!
+    email: String!
+    name: String!
+    password: String!
+    phone: String!
+}
+
+input UserUpdate {
+    company_name: String!
+    company_position: String!
+    name: String!
+    phone: String!
+}
+
+input VerifyInput {
+    expires: Int!
+    hash: String!
+    id: Int!
+    signature: String!
+}
+
+input companyInput {
+    bank_account: String
+    bank_address: String
+    bank_name: String
+    bik: String
+    corr_account: String
+    director_name: String
+    director_post: String
+    inn: String
+    kpp: String
+    legal_address: String
+    legal_name: String
+    main_organization: String
+    ogrn: String
+    okpo: String
+    post_address: String
+    short_name: String
+}

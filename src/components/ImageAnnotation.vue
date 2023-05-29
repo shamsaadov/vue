@@ -46,6 +46,11 @@
           ></v-text>
         </v-layer>
       </v-stage>
+      <div>
+        <button id="add_photo_btn" @click="addPhoto">Добавить фото</button>
+        <img v-if="photo" :src="photo" alt="Изображение" />
+      </div>
+      <button id="save_btn" @click="logAnnotations">Сохранить</button>
     </div>
     <div class="annotation">
       <div
@@ -71,20 +76,21 @@
           @blur="endEditText(annotation)"
           @keydown.enter="endEditText(annotation)"
         />
-        <button id="button_app" @click="deleteAnnotation(index, $event)">
+        <button id="delete_btn" @click="deleteAnnotation(index, $event)">
           &#128465;
         </button>
         <button
-          id="button_app"
+          id="edit_btn"
           type="button"
           @click="toggleEdit(annotation, $event)"
         >
           {{ annotation.editing ? "&#128190;" : "&#9998;" }}
         </button>
       </div>
-      <button id="button_app" class="btn" @click="toggleDrawingEnabled($event)">
-        {{ drawingEnabled ? "Выключить" : "Включить" }}
+      <button id="enable_btn" class="btn" @click="toggleDrawingEnabled($event)">
+        {{ drawingEnabled ? "Выключить" : "Добавить" }}
       </button>
+      <button id="reset_btn" @click="resetAnnotations">Сбросить</button>
     </div>
   </div>
 </template>
@@ -97,14 +103,20 @@ import gql from "graphql-tag";
 export default {
   data() {
     return {
-      movingEnd: null,
-      drawingEnabled: true,
-      hoveredIndex: null,
-      movingStart: null,
+      photo: null,
       stageConfig: {
         width: window.innerWidth,
         height: window.innerHeight,
       },
+      imageConfig: {
+        x: 500,
+        y: 0,
+        image: null,
+      },
+      movingEnd: null,
+      drawingEnabled: true,
+      hoveredIndex: null,
+      movingStart: null,
       startCircleConfig: {
         x: 0,
         y: 0,
@@ -113,19 +125,23 @@ export default {
         stroke: "black",
         strokeWidth: 1,
       },
-      imageConfig: {
-        x: 500,
-        y: 0,
-        image: null,
-      },
       annotations: [],
       startPoint: null,
       editing: false,
       editingText: "",
       editingAnnotation: null,
+      textConfig: {
+        text: "",
+      },
+      arrowConfig: {
+        points: [0, 0, 0, 0],
+      },
     };
   },
   mounted() {
+    this.loadImage(
+      "http://catalog-mtz.ru/api/storage/media/images/q4pigMWyPAxixBcyYgBNnxhZfGp8X41FxFNZBZ8C.jpeg?expires=1683898683&signature=9fbef924b0c8f9284ed8a31e1507f64889083d8152a578ba1a388342fe779bb0"
+    );
     this.loadImage();
     this.$refs.stage.$el.addEventListener("mousedown", this.startDrawing);
     this.$refs.stage.$el.addEventListener("mousemove", this.draw);
@@ -141,16 +157,42 @@ export default {
   },
 
   methods: {
-    loadImage() {
+    loadImage(url) {
       const imageObj = new Image();
-      imageObj.src =
-        "http://catalog-mtz.ru/api/storage/media/images/q4pigMWyPAxixBcyYgBNnxhZfGp8X41FxFNZBZ8C.jpeg?expires=1683898683&signature=9fbef924b0c8f9284ed8a31e1507f64889083d8152a578ba1a388342fe779bb0";
+      imageObj.src = url;
       imageObj.onload = () => {
         this.imageConfig.image = imageObj;
-        this.$nextTick(() => {
-          this.$refs.layer.getNode().batchDraw();
-        });
+        this.$refs.layer.getNode().batchDraw();
       };
+    },
+
+    logAnnotations() {
+      this.annotations.forEach((annotation, index) => {
+        console.log(`x: ${annotation.textConfig.x}`);
+        console.log(`y: ${annotation.textConfig.y}`);
+        console.log(`Text: ${annotation.textConfig.text}`);
+      });
+    },
+
+    resetAnnotations() {
+      this.annotations = [];
+    },
+
+    addPhoto() {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.onchange = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            this.loadImage(e.target.result);
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+      input.click();
     },
 
     startMovingStart(annotation) {
@@ -321,30 +363,67 @@ export default {
   position: absolute;
   top: 10px;
 }
-#button_app {
-  color: white;
-  font-size: 16px;
+
+#save_btn {
+  background-color: #3c8dbc;
+  padding: 5px 10px;
+  border-radius: 3px;
+  border: 1px solid transparent;
+  color: #fff;
+  margin-left: 51rem;
+  margin-top: 1rem;
+}
+
+#enable_btn {
+  background-color: #5cb85c;
+  padding: 5px 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  border-radius: 3px;
+  box-shadow: none;
+  border: 1px solid transparent;
+  color: #fff;
+}
+
+#add_photo_btn {
+  background-color: #3c8dbc;
+  border: 1px solid transparent;
+
+  padding: 10px 10px;
+  color: #fff;
+  margin-left: 50rem;
+}
+
+#edit_btn {
+  color: #444;
+  background-color: #f4f4f4;
+  border-radius: 5px;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+  border: 1px solid transparent;
   padding: 10px 20px;
-  border: none;
+  width: 50px;
+  transition: all 0.3s ease;
+}
+#delete_btn {
+  color: white;
+  width: 50px;
+  padding: 10px 20px;
+  margin: auto;
   border-radius: 5px;
   cursor: pointer;
   transition: all 0.3s ease;
+  background-color: #dd4b39;
+  border-color: #d73925;
 }
 
-#button_app:hover {
-  opacity: 0.8;
-}
-
-#button_app:nth-child(3) {
-  background-color: red;
-}
-
-#button_app:nth-child(3) {
-  background-color: #ff0000;
-}
-
-#button_app:nth-child(4) {
-  background-color: blue;
+#reset_btn {
+  background-color: #f39c12;
+  border-color: #e08e0b;
+  margin-left: 1rem;
+  border-radius: 3px;
+  color: #ffffff;
+  padding: 5px 10px;
 }
 
 .btn {
