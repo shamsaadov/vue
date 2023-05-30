@@ -90,6 +90,7 @@
       <button id="enable_btn" class="btn" @click="toggleDrawingEnabled($event)">
         {{ drawingEnabled ? "Выключить" : "Добавить" }}
       </button>
+
       <button id="reset_btn" @click="resetAnnotations">Сбросить</button>
     </div>
   </div>
@@ -98,11 +99,15 @@
 <script>
 import Konva from "konva";
 import img from "../assets/vue.png";
-import gql from "graphql-tag";
+import PRODUCTS_QUERY from "../../graphql/query/getProducts.query.graphql";
+import { useQuery } from "@vue/apollo-composable";
 
 export default {
   data() {
     return {
+      products: {
+        data: [],
+      },
       photo: null,
       stageConfig: {
         width: window.innerWidth,
@@ -138,6 +143,7 @@ export default {
       },
     };
   },
+
   mounted() {
     this.loadImage(
       "http://catalog-mtz.ru/api/storage/media/images/q4pigMWyPAxixBcyYgBNnxhZfGp8X41FxFNZBZ8C.jpeg?expires=1683898683&signature=9fbef924b0c8f9284ed8a31e1507f64889083d8152a578ba1a388342fe779bb0"
@@ -146,6 +152,7 @@ export default {
     this.$refs.stage.$el.addEventListener("mousedown", this.startDrawing);
     this.$refs.stage.$el.addEventListener("mousemove", this.draw);
     this.$refs.stage.$el.addEventListener("mouseup", this.stopDrawing);
+    // this.products = this.setup();
   },
 
   computed: {
@@ -351,6 +358,22 @@ export default {
     onLineMouseout() {
       this.hoveredIndex = null;
     },
+  },
+
+  apollo: {
+    products: {
+      query: PRODUCTS_QUERY,
+    },
+  },
+  setup() {
+    const { result } = useQuery(PRODUCTS_QUERY);
+
+    if (result.value) {
+      const products = result.value.data.products;
+      console.log(products);
+    } else {
+      console.log("Error");
+    }
   },
 };
 </script>

@@ -1,0 +1,9 @@
+query {
+    products(first: 10) {
+        data {
+            id
+            image
+            name
+        }
+    }
+}
