@@ -1,9 +1,46 @@
-query {
-    products(first: 10) {
+query allProducts(
+    $productFilter: ProductFilter
+    $productSorter: ProductSorter
+    $countProduct: Int!
+    $productPage: Int
+) {
+    products(
+        filter: $productFilter
+        sorter: $productSorter
+        first: $countProduct
+        page: $productPage
+    ) {
         data {
             id
+            slug
+            article
+            production_status {
+                color
+                id
+                name
+                class
+            }
             image
+            non_current
             name
+            note
+            description
+            modifications {
+                id
+                name
+                slug
+                article
+                description
+            }
+        }
+        paginatorInfo {
+            count
+            firstItem
+            currentPage
+            total
+            hasMorePages
+            perPage
+            lastPage
         }
     }
 }

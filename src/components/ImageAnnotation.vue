@@ -46,6 +46,13 @@
           ></v-text>
         </v-layer>
       </v-stage>
+      <div style="background-color: #d73925" v-for="product in products">
+        <h1>Hello World</h1>
+        <p>{{ product?.id }}</p>
+        <p>{{ product?.image }}</p>
+        <p>{{ product?.name }}</p>
+      </div>
+
       <div>
         <button id="add_photo_btn" @click="addPhoto">Добавить фото</button>
         <img v-if="photo" :src="photo" alt="Изображение" />
@@ -97,17 +104,25 @@
 </template>
 
 <script>
-import Konva from "konva";
-import img from "../assets/vue.png";
-import PRODUCTS_QUERY from "../../graphql/query/getProducts.query.graphql";
+import gql from "graphql-tag";
+import { ref, watchEffect } from "vue";
 import { useQuery } from "@vue/apollo-composable";
+const PRODUCTS_QUERY = gql`
+  query {
+    products(first: 10) {
+      data {
+        id
+        image
+        name
+      }
+    }
+  }
+`;
 
 export default {
   data() {
     return {
-      products: {
-        data: [],
-      },
+      products: [],
       photo: null,
       stageConfig: {
         width: window.innerWidth,
@@ -179,6 +194,7 @@ export default {
         console.log(`y: ${annotation.textConfig.y}`);
         console.log(`Text: ${annotation.textConfig.text}`);
       });
+      console.log(this.products);
     },
 
     resetAnnotations() {
@@ -360,20 +376,29 @@ export default {
     },
   },
 
-  apollo: {
-    products: {
-      query: PRODUCTS_QUERY,
-    },
-  },
   setup() {
-    const { result } = useQuery(PRODUCTS_QUERY);
+    const products = ref([]);
+    const { result, loading, error } = useQuery(PRODUCTS_QUERY);
 
-    if (result.value) {
-      const products = result.value.data.products;
-      console.log(products);
-    } else {
-      console.log("Error");
-    }
+    watchEffect(async () => {
+      try {
+        await result.value;
+        if (result.value && result.value.data && result.value.data.products) {
+          const products = result.value.data.products;
+          console.log(products);
+        } else {
+          console.error("Invalid response structure");
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    console.log(products.value);
+
+    return {
+      products,
+    };
   },
 };
 </script>
