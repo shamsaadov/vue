@@ -46,18 +46,13 @@
           ></v-text>
         </v-layer>
       </v-stage>
-      <div style="background-color: #d73925" v-for="product in products">
-        <h1>Hello World</h1>
-        <p>{{ product?.id }}</p>
-        <p>{{ product?.image }}</p>
-        <p>{{ product?.name }}</p>
-      </div>
-
       <div>
-        <button id="add_photo_btn" @click="addPhoto">Добавить фото</button>
+        <button id="add_photo_btn" @click="addPhoto($event)">
+          Добавить фото
+        </button>
         <img v-if="photo" :src="photo" alt="Изображение" />
       </div>
-      <button id="save_btn" @click="logAnnotations">Сохранить</button>
+      <button id="save_btn" @click="logAnnotations($event)">Сохранить</button>
     </div>
     <div class="annotation">
       <div
@@ -97,32 +92,19 @@
       <button id="enable_btn" class="btn" @click="toggleDrawingEnabled($event)">
         {{ drawingEnabled ? "Выключить" : "Добавить" }}
       </button>
-
-      <button id="reset_btn" @click="resetAnnotations">Сбросить</button>
+      <button id="reset_btn" @click="resetAnnotations($event)">Сбросить</button>
     </div>
   </div>
 </template>
 
 <script>
+import Konva from "konva";
+import img from "../assets/vue.png";
 import gql from "graphql-tag";
-import { ref, watchEffect } from "vue";
-import { useQuery } from "@vue/apollo-composable";
-const PRODUCTS_QUERY = gql`
-  query {
-    products(first: 10) {
-      data {
-        id
-        image
-        name
-      }
-    }
-  }
-`;
 
 export default {
   data() {
     return {
-      products: [],
       photo: null,
       stageConfig: {
         width: window.innerWidth,
@@ -158,7 +140,6 @@ export default {
       },
     };
   },
-
   mounted() {
     this.loadImage(
       "http://catalog-mtz.ru/api/storage/media/images/q4pigMWyPAxixBcyYgBNnxhZfGp8X41FxFNZBZ8C.jpeg?expires=1683898683&signature=9fbef924b0c8f9284ed8a31e1507f64889083d8152a578ba1a388342fe779bb0"
@@ -167,7 +148,6 @@ export default {
     this.$refs.stage.$el.addEventListener("mousedown", this.startDrawing);
     this.$refs.stage.$el.addEventListener("mousemove", this.draw);
     this.$refs.stage.$el.addEventListener("mouseup", this.stopDrawing);
-    // this.products = this.setup();
   },
 
   computed: {
@@ -188,20 +168,25 @@ export default {
       };
     },
 
-    logAnnotations() {
+    logAnnotations(event) {
+      event.preventDefault();
+      event.stopPropagation();
       this.annotations.forEach((annotation, index) => {
         console.log(`x: ${annotation.textConfig.x}`);
         console.log(`y: ${annotation.textConfig.y}`);
         console.log(`Text: ${annotation.textConfig.text}`);
       });
-      console.log(this.products);
     },
 
-    resetAnnotations() {
+    resetAnnotations(event) {
+      event.preventDefault();
+      event.stopPropagation();
       this.annotations = [];
     },
 
-    addPhoto() {
+    addPhoto(event) {
+      event.preventDefault();
+      event.stopPropagation();
       const input = document.createElement("input");
       input.type = "file";
       input.accept = "image/*";
@@ -375,31 +360,6 @@ export default {
       this.hoveredIndex = null;
     },
   },
-
-  setup() {
-    const products = ref([]);
-    const { result, loading, error } = useQuery(PRODUCTS_QUERY);
-
-    watchEffect(async () => {
-      try {
-        await result.value;
-        if (result.value && result.value.data && result.value.data.products) {
-          const products = result.value.data.products;
-          console.log(products);
-        } else {
-          console.error("Invalid response structure");
-        }
-      } catch (err) {
-        console.error(err);
-      }
-    });
-
-    console.log(products.value);
-
-    return {
-      products,
-    };
-  },
 };
 </script>
 
@@ -472,11 +432,6 @@ export default {
   border-radius: 3px;
   color: #ffffff;
   padding: 5px 10px;
-}
-
-.btn {
-  margin-top: 2rem;
-  background-color: #213547;
 }
 
 .crosshair-cursor {
