@@ -33,17 +33,20 @@
             @mousedown="startMovingEnd(annotation)"
             @mouseup="stopMovingEnd"
           ></v-circle>
-          <v-text
-            v-for="(annotation, index) in annotations"
-            :key="`text-${index}`"
-            :config="{
-              x: annotation.endCircleConfig.x - 30,
-              y: annotation.endCircleConfig.y - 25,
-              text: annotation.textConfig.text,
-              fontSize: 18,
-              draggable: false,
-            }"
-          ></v-text>
+          <div>
+            <h1>Примечания</h1>
+            <v-text
+              v-for="(annotation, index) in annotations"
+              :key="`text-${index}`"
+              :config="{
+                x: annotation.endCircleConfig.x - 30,
+                y: annotation.endCircleConfig.y - 25,
+                text: annotation.textConfig.text,
+                fontSize: 18,
+                draggable: false,
+              }"
+            ></v-text>
+          </div>
         </v-layer>
       </v-stage>
       <div>
@@ -54,46 +57,16 @@
       </div>
       <button id="save_btn" @click="logAnnotations($event)">Сохранить</button>
     </div>
-    <div class="annotation">
-      <div
-        v-for="(annotation, index) in annotations"
-        :key="index"
-        :class="{ highlighted: index === hoveredIndex }"
-      >
-        <div style="display: flex">
-          <p>
-            <strong>{{ index + 1 }})</strong>
-          </p>
-          <p
-            v-if="!annotation.editing"
-            @click="startEditText(annotation, $event)"
-          >
-            {{ annotation.textConfig.text }}
-          </p>
-        </div>
-        <input
-          v-if="annotation.editing"
-          type="text"
-          v-model="annotation.textConfig.text"
-          @blur="endEditText(annotation)"
-          @keydown.enter="endEditText(annotation)"
-        />
-        <button id="delete_btn" @click="deleteAnnotation(index, $event)">
-          &#128465;
-        </button>
-        <button
-          id="edit_btn"
-          type="button"
-          @click="toggleEdit(annotation, $event)"
-        >
-          {{ annotation.editing ? "&#128190;" : "&#9998;" }}
-        </button>
-      </div>
+    <table class="annotation">
+      <thead>
+        Примечания
+      </thead>
+      <tbody></tbody>
       <button id="enable_btn" class="btn" @click="toggleDrawingEnabled($event)">
         {{ drawingEnabled ? "Выключить" : "Добавить" }}
       </button>
       <button id="reset_btn" @click="resetAnnotations($event)">Сбросить</button>
-    </div>
+    </table>
   </div>
 </template>
 
