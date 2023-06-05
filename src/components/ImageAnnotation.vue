@@ -33,20 +33,17 @@
             @mousedown="startMovingEnd(annotation)"
             @mouseup="stopMovingEnd"
           ></v-circle>
-          <div>
-            <h1>Примечания</h1>
-            <v-text
-              v-for="(annotation, index) in annotations"
-              :key="`text-${index}`"
-              :config="{
-                x: annotation.endCircleConfig.x - 30,
-                y: annotation.endCircleConfig.y - 25,
-                text: annotation.textConfig.text,
-                fontSize: 18,
-                draggable: false,
-              }"
-            ></v-text>
-          </div>
+          <v-text
+            v-for="(annotation, index) in annotations"
+            :key="`text-${index}`"
+            :config="{
+              x: annotation.endCircleConfig.x - 30,
+              y: annotation.endCircleConfig.y - 25,
+              text: annotation.textConfig.text,
+              fontSize: 18,
+              draggable: false,
+            }"
+          ></v-text>
         </v-layer>
       </v-stage>
       <div>
@@ -58,25 +55,52 @@
       <button id="save_btn" @click="logAnnotations($event)">Сохранить</button>
     </div>
     <table class="annotation">
-      <thead>
-        Примечания
-        <list />
-      </thead>
-      <tbody></tbody>
-      <button id="enable_btn" class="btn" @click="toggleDrawingEnabled($event)">
-        {{ drawingEnabled ? "Выключить" : "Добавить" }}
-      </button>
-      <button id="reset_btn" @click="resetAnnotations($event)">Сбросить</button>
+      <tr>
+        <th>Примечания</th>
+        <th>Запасные части</th>
+      </tr>
+
+      <tr v-for="(annotation, index) in annotations" :key="index">
+        <td :class="{ highlighted: index === hoveredIndex }">
+          <div class="annotation-item">
+            <div style="display: flex">
+              <p
+                v-if="!annotation.editing"
+                @click="startEditText(annotation, $event)"
+              >
+                {{ annotation.textConfig.text }}
+              </p>
+            </div>
+            <input
+              v-if="annotation.editing"
+              type="text"
+              v-model="annotation.textConfig.text"
+              @blur="endEditText(annotation)"
+              @keydown.enter="endEditText(annotation)"
+            />
+            <button id="delete_btn" @click="deleteAnnotation(index, $event)">
+              &#128465;
+            </button>
+            <button
+              id="edit_btn"
+              type="button"
+              @click="toggleEdit(annotation, $event)"
+            >
+              {{ annotation.editing ? "&#128190;" : "&#9998;" }}
+            </button>
+          </div>
+        </td>
+        <td>Список запчастей</td>
+      </tr>
     </table>
+    <button id="enable_btn" class="btn" @click="toggleDrawingEnabled($event)">
+      {{ drawingEnabled ? "Выключить" : "Добавить" }}
+    </button>
+    <button id="reset_btn" @click="resetAnnotations($event)">Сбросить</button>
   </div>
 </template>
 
 <script>
-import Konva from "konva";
-import img from "../assets/vue.png";
-import gql from "graphql-tag";
-import List from "./List.vue";
-
 export default {
   data() {
     return {
@@ -342,6 +366,7 @@ export default {
 .highlighted {
   background-color: yellow;
 }
+
 .annotation {
   position: absolute;
   top: 10px;
@@ -388,6 +413,7 @@ export default {
   width: 50px;
   transition: all 0.3s ease;
 }
+
 #delete_btn {
   color: white;
   width: 50px;
@@ -411,5 +437,42 @@ export default {
 
 .crosshair-cursor {
   cursor: crosshair;
+}
+
+.annotation {
+  margin-top: 20px;
+  border-collapse: collapse;
+}
+
+.annotation th,
+.annotation td {
+  padding: 8px;
+  text-align: left;
+}
+
+.annotation th {
+  font-weight: bold;
+  border-bottom: 1px solid #ddd;
+}
+
+.annotation-item {
+  display: flex;
+  align-items: center;
+  padding-bottom: 8px;
+}
+
+.annotation-item p:first-child {
+  margin-right: 10px;
+}
+
+.highlighted {
+  background-color: darkgrey;
+}
+
+td,
+th {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 8px;
 }
 </style>
