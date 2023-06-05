@@ -30,4 +30,4 @@ const app = createApp({
 
 app.use(VueKonva);
 
-app.mount("#app");
+app.mount("#interactive-app");

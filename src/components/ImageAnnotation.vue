@@ -1,4 +1,13 @@
 <template>
+  <div id="settings_btn">
+    <button id="enable_btn" class="btn" @click="toggleDrawingEnabled($event)">
+      {{ drawingEnabled ? "Выключить" : "Добавить" }}
+    </button>
+    <button id="reset_btn" @click="resetAnnotations($event)">Сбросить</button>
+  </div>
+  <button id="add_photo_btn" @click="addPhoto($event)">Добавить фото</button>
+  <button id="save_btn" @click="logAnnotations($event)">Сохранить</button>
+
   <div style="position: relative">
     <div :class="containerClass">
       <v-stage ref="stage" :config="stageConfig">
@@ -47,12 +56,8 @@
         </v-layer>
       </v-stage>
       <div>
-        <button id="add_photo_btn" @click="addPhoto($event)">
-          Добавить фото
-        </button>
         <img v-if="photo" :src="photo" alt="Изображение" />
       </div>
-      <button id="save_btn" @click="logAnnotations($event)">Сохранить</button>
     </div>
     <table class="annotation">
       <tr>
@@ -93,10 +98,6 @@
         <td>Список запчастей</td>
       </tr>
     </table>
-    <button id="enable_btn" class="btn" @click="toggleDrawingEnabled($event)">
-      {{ drawingEnabled ? "Выключить" : "Добавить" }}
-    </button>
-    <button id="reset_btn" @click="resetAnnotations($event)">Сбросить</button>
   </div>
 </template>
 
