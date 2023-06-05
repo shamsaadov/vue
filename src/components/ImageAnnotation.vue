@@ -60,6 +60,7 @@
     <table class="annotation">
       <thead>
         Примечания
+        <list />
       </thead>
       <tbody></tbody>
       <button id="enable_btn" class="btn" @click="toggleDrawingEnabled($event)">
@@ -74,6 +75,7 @@
 import Konva from "konva";
 import img from "../assets/vue.png";
 import gql from "graphql-tag";
+import List from "./List.vue";
 
 export default {
   data() {
