@@ -95,13 +95,30 @@
             </button>
           </div>
         </td>
-        <td>Список запчастей</td>
+        <td v-for="(product, index) in this.products">
+          <p v-for="pr in product.data">{{ pr.name }}</p>
+        </td>
       </tr>
     </table>
   </div>
 </template>
 
 <script>
+import { ref, watchEffect } from "vue";
+import { useQuery } from "@vue/apollo-composable";
+import gql from "graphql-tag";
+
+const PRODUCTS_QUERY = gql`
+  query {
+    products(first: 10) {
+      data {
+        id
+        image
+        name
+      }
+    }
+  }
+`;
 export default {
   data() {
     return {
@@ -138,9 +155,37 @@ export default {
       arrowConfig: {
         points: [0, 0, 0, 0],
       },
+      products: [],
     };
   },
+
+  setup() {
+    const products = ref([]);
+    const { result, loading, error } = useQuery(PRODUCTS_QUERY);
+
+    watchEffect(async () => {
+      try {
+        await result.value;
+        if (result.value && result.value.data && result.value.data.products) {
+          const products = result.value.data.products;
+          console.log(products);
+        } else {
+          console.log(result);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    return {
+      products,
+    };
+  },
+
   mounted() {
+    const { result, loading, error } = useQuery(PRODUCTS_QUERY);
+    this.products = result;
+    console.log(this.products, "11");
     this.loadImage(
       "http://catalog-mtz.ru/api/storage/media/images/q4pigMWyPAxixBcyYgBNnxhZfGp8X41FxFNZBZ8C.jpeg?expires=1683898683&signature=9fbef924b0c8f9284ed8a31e1507f64889083d8152a578ba1a388342fe779bb0"
     );
