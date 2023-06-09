@@ -95,8 +95,12 @@
             </button>
           </div>
         </td>
-        <td v-for="(product, index) in this.productS">
-          {{ product.image }}
+        <td>
+            <td v-for="(product, index) in productS">
+                <select :value="selectedSpareParts[annotation.id]" @change="selectSparePart(annotation.id, $event.target.value)">
+                    <option v-for="sparePart in product.spare_parts.data" :value="sparePart.id">{{ sparePart.name }} </option>
+                </select>
+            </td>
         </td>
       </tr>
     </table>
@@ -116,6 +120,7 @@ const PRODUCTS_QUERY = gql`
       spare_parts(first: 15) {
         data {
           id
+          image
           name
         }
       }
@@ -126,6 +131,8 @@ export default {
   data() {
     return {
       photo: null,
+      selectedSpareParts: {},
+        spareParts: [],
       stageConfig: {
         width: window.innerWidth,
         height: window.innerHeight,
@@ -136,6 +143,7 @@ export default {
         image: null,
       },
       movingEnd: null,
+      selectedSparePart: null,
       drawingEnabled: true,
       hoveredIndex: null,
       movingStart: null,
@@ -182,7 +190,36 @@ export default {
     },
   },
 
+  setup() {
+        let productsInRef = ref([]);
+        const sparePartsInRef = ref([]);
+
+        const { result, loading, error } = useQuery(PRODUCTS_QUERY);
+
+        watchEffect(() => {
+                const productData = result?.value?.data?.products;
+                const sparePartsData = result?.value?.data?.products.map((p) => p.spare_parts.data).flat();
+
+                productsInRef = productData;
+                sparePartsInRef.value = sparePartsData;
+
+        });
+
+        console.log(productsInRef)
+
+        return {
+            productsInRef,
+            sparePartsInRef,
+        };
+    },
+
   methods: {
+
+    selectSparePart(annotationId, sparePartId) {
+          this.selectedSpareParts[annotationId] = sparePartId;
+          console.log(this.selectedSpareParts);
+      },
+
     loadImage(url) {
       const imageObj = new Image();
       imageObj.src = url;
@@ -195,7 +232,9 @@ export default {
     logAnnotations(event) {
       event.preventDefault();
       event.stopPropagation();
-      this.annotations.forEach((annotation, index) => {
+        this.annotations.forEach((annotation, index) => {
+            const selectedSparePart = this.selectedSpareParts[annotation.id];
+            console.log("Выбранная запасная часть:", selectedSparePart);
         console.log(`x: ${annotation.textConfig.x}`);
         console.log(`y: ${annotation.textConfig.y}`);
         console.log(`Text: ${annotation.textConfig.text}`);
@@ -369,13 +408,6 @@ export default {
       this.editingAnnotation = null;
     },
 
-    changeRectColor(rectConfig, color) {
-      rectConfig.fill = color;
-      if (color === "green") {
-        rectConfig.fill = "darkgray";
-      }
-    },
-
     onLineMouseover(index) {
       this.hoveredIndex = index;
     },
@@ -383,6 +415,7 @@ export default {
     onLineMouseout() {
       this.hoveredIndex = null;
     },
+
   },
 };
 </script>

@@ -12,7 +12,6 @@ const httpLink = createHttpLink({
   uri: "http://catalog-mtz.ru/graphql",
 });
 
-// Create the apollo client
 const apolloClient = new ApolloClient({
   link: httpLink,
   cache: new InMemoryCache(),
