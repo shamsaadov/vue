@@ -1,64 +1,26 @@
 <template>
-  <div id="settings_btn">
-    <button id="enable_btn" class="btn" @click="toggleDrawingEnabled($event)">
-      {{ drawingEnabled ? "Выключить" : "Добавить" }}
-    </button>
-    <button id="reset_btn" @click="resetAnnotations($event)">Сбросить</button>
-  </div>
-  <button id="add_photo_btn" @click="addPhoto($event)">Добавить фото</button>
-  <button id="save_btn" @click="logAnnotations($event)">Сохранить</button>
+  <SettingsBtn
+    :drawingEnabled="drawingEnabled"
+    @toggleDrawingEnabled="toggleDrawingEnabled"
+    @resetAnnotations="resetAnnotations"
+    @logAnnotations="logAnnotations"
+    @loadImage="loadImage"
+  />
 
   <div style="position: relative">
-    <div :class="containerClass">
-      <v-stage ref="stage" :config="stageConfig">
-        <v-layer ref="layer">
-          <v-image :config="imageConfig"></v-image>
-          <v-line
-            v-for="(annotation, index) in annotations"
-            :key="index"
-            :config="annotation.arrowConfig"
-            @mouseover.native="onLineMouseover(index)"
-            @mouseout.native="onLineMouseout"
-          ></v-line>
+    <Stage
+      ref="stage"
+      :annotations="annotations"
+      :photo="photo"
+      :drawingEnabled="drawingEnabled"
+      :imageConfig="imageConfig"
+      @onLineMouseover="onLineMouseover"
+      @onLineMouseout="onLineMouseout"
+      @changeCircleColor="changeCircleColor"
+      @startDrawing="startDrawing"
+      @draw="draw"
+    />
 
-          <v-circle
-            v-for="(annotation, index) in annotations"
-            :key="`start-${index}`"
-            :config="annotation.startCircleConfig"
-            @mouseover="
-              changeCircleColor(annotation.startCircleConfig, 'green')
-            "
-            @mouseout="changeCircleColor(annotation.startCircleConfig, 'red')"
-            @mousedown="startMovingStart(annotation)"
-            @mouseup="stopMovingStart"
-          ></v-circle>
-
-          <v-circle
-            v-for="(annotation, index) in annotations"
-            :key="`end-${index}`"
-            :config="annotation.endCircleConfig"
-            @mouseover="changeCircleColor(annotation.endCircleConfig, 'green')"
-            @mouseout="changeCircleColor(annotation.endCircleConfig, 'red')"
-            @mousedown="startMovingEnd(annotation)"
-            @mouseup="stopMovingEnd"
-          ></v-circle>
-          <v-text
-            v-for="(annotation, index) in annotations"
-            :key="`text-${index}`"
-            :config="{
-              x: annotation.endCircleConfig.x - 30,
-              y: annotation.endCircleConfig.y - 25,
-              text: annotation.textConfig.text,
-              fontSize: 18,
-              draggable: false,
-            }"
-          ></v-text>
-        </v-layer>
-      </v-stage>
-      <div>
-        <img v-if="photo" :src="photo" alt="Изображение" />
-      </div>
-    </div>
     <table class="annotation">
       <tr>
         <th>Примечания</th>
@@ -95,12 +57,8 @@
             </button>
           </div>
         </td>
-        <td>
-            <td v-for="(product, index) in productS">
-                <select :value="selectedSpareParts[annotation.id]" @change="selectSparePart(annotation.id, $event.target.value)">
-                    <option v-for="sparePart in product.spare_parts.data" :value="sparePart.id">{{ sparePart.name }} </option>
-                </select>
-            </td>
+        <td v-for="(product, index) in this.productS">
+          {{ product.image }}
         </td>
       </tr>
     </table>
@@ -108,9 +66,11 @@
 </template>
 
 <script>
-import { ref, watchEffect } from "vue";
 import { useQuery } from "@vue/apollo-composable";
 import gql from "graphql-tag";
+
+import SettingsBtn from "./SettingsBtn.vue";
+import Stage from "./Stage.vue";
 
 const PRODUCTS_QUERY = gql`
   query {
@@ -120,7 +80,6 @@ const PRODUCTS_QUERY = gql`
       spare_parts(first: 15) {
         data {
           id
-          image
           name
         }
       }
@@ -128,11 +87,13 @@ const PRODUCTS_QUERY = gql`
   }
 `;
 export default {
+  components: {
+    SettingsBtn,
+    Stage,
+  },
   data() {
     return {
       photo: null,
-      selectedSpareParts: {},
-        spareParts: [],
       stageConfig: {
         width: window.innerWidth,
         height: window.innerHeight,
@@ -142,11 +103,8 @@ export default {
         y: 0,
         image: null,
       },
-      movingEnd: null,
-      selectedSparePart: null,
       drawingEnabled: true,
       hoveredIndex: null,
-      movingStart: null,
       startCircleConfig: {
         x: 0,
         y: 0,
@@ -156,7 +114,6 @@ export default {
         strokeWidth: 1,
       },
       annotations: [],
-      startPoint: null,
       editing: false,
       editingText: "",
       editingAnnotation: null,
@@ -177,9 +134,6 @@ export default {
       "http://catalog-mtz.ru/api/storage/media/images/q4pigMWyPAxixBcyYgBNnxhZfGp8X41FxFNZBZ8C.jpeg?expires=1683898683&signature=9fbef924b0c8f9284ed8a31e1507f64889083d8152a578ba1a388342fe779bb0"
     );
     this.loadImage();
-    this.$refs.stage.$el.addEventListener("mousedown", this.startDrawing);
-    this.$refs.stage.$el.addEventListener("mousemove", this.draw);
-    this.$refs.stage.$el.addEventListener("mouseup", this.stopDrawing);
   },
 
   computed: {
@@ -190,202 +144,52 @@ export default {
     },
   },
 
-  setup() {
-        let productsInRef = ref([]);
-        const sparePartsInRef = ref([]);
-
-        const { result, loading, error } = useQuery(PRODUCTS_QUERY);
-
-        watchEffect(() => {
-                const productData = result?.value?.data?.products;
-                const sparePartsData = result?.value?.data?.products.map((p) => p.spare_parts.data).flat();
-
-                productsInRef = productData;
-                sparePartsInRef.value = sparePartsData;
-
-        });
-
-        console.log(productsInRef)
-
-        return {
-            productsInRef,
-            sparePartsInRef,
-        };
-    },
-
   methods: {
-
-    selectSparePart(annotationId, sparePartId) {
-          this.selectedSpareParts[annotationId] = sparePartId;
-          console.log(this.selectedSpareParts);
-      },
-
     loadImage(url) {
       const imageObj = new Image();
       imageObj.src = url;
       imageObj.onload = () => {
         this.imageConfig.image = imageObj;
-        this.$refs.layer.getNode().batchDraw();
+        this.$refs.stage.$refs.layer.getNode().batchDraw();
       };
     },
 
-    logAnnotations(event) {
-      event.preventDefault();
-      event.stopPropagation();
-        this.annotations.forEach((annotation, index) => {
-            const selectedSparePart = this.selectedSpareParts[annotation.id];
-            console.log("Выбранная запасная часть:", selectedSparePart);
+    logAnnotations() {
+      this.annotations.forEach((annotation, index) => {
         console.log(`x: ${annotation.textConfig.x}`);
         console.log(`y: ${annotation.textConfig.y}`);
         console.log(`Text: ${annotation.textConfig.text}`);
       });
     },
 
-    resetAnnotations(event) {
-      event.preventDefault();
-      event.stopPropagation();
+    resetAnnotations() {
       this.annotations = [];
     },
 
-    addPhoto(event) {
-      event.preventDefault();
-      event.stopPropagation();
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = "image/*";
-      input.onchange = (event) => {
-        const file = event.target.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            this.loadImage(e.target.result);
-          };
-          reader.readAsDataURL(file);
+    changeCircleColor({ id, prop, color }) {
+      this.annotations.forEach((annotation) => {
+        if (annotation.id === id) {
+          annotation[prop].fill = color;
         }
-      };
-      input.click();
+      });
     },
 
-    startMovingStart(annotation) {
-      this.movingStart = annotation;
-      this.changeCircleColor(annotation.startCircleConfig, "green");
-    },
-
-    stopMovingStart(annotation) {
-      this.movingStart = null;
-      this.changeCircleColor(annotation.startCircleConfig, "red");
-    },
-
-    changeCircleColor(circleConfig, color) {
-      circleConfig.fill = color;
-    },
-
-    toggleDrawingEnabled(event) {
-      event.preventDefault();
-      event.stopPropagation();
-
+    toggleDrawingEnabled() {
       this.drawingEnabled = !this.drawingEnabled;
     },
 
-    startMovingEnd(annotation) {
-      this.movingEnd = annotation;
+    startDrawing(annotation) {
+      this.annotations.push(annotation);
     },
 
-    stopMovingEnd() {
-      this.movingEnd = null;
-    },
-
-    startDrawing(event) {
-      if (this.editingAnnotation) return;
-      if (!this.drawingEnabled) return;
-      if (this.movingEnd) return;
-      if (this.editingAnnotation || this.movingEnd || this.movingStart) return;
-      this.drawing = true;
-      const stage = this.$refs.stage.getStage();
-      const pos = stage.getPointerPosition();
-      this.startPoint = { x: pos.x, y: pos.y };
-
-      const circleConfig = {
-        x: this.startPoint.x,
-        y: this.startPoint.y,
-        radius: 5,
-        fill: "darkblue",
-        stroke: "darkblue",
-        strokeWidth: 1,
-      };
-
-      const arrowConfig = {
-        points: [
-          this.startPoint.x,
-          this.startPoint.y,
-          this.startPoint.x,
-          this.startPoint.y,
-        ],
-        stroke: "darkblue",
-        strokeWidth: 3,
-        pointerLength: 10,
-        pointerWidth: 10,
-        tension: 0,
-        draggable: false,
-      };
-
-      const textConfig = {
-        x: 10,
-        y: 10 + 30 * this.annotations.length,
-        text: "Примечание",
-        fontSize: 18,
-        draggable: false,
-        editing: false,
-      };
-
-      this.annotations.push({
-        id: Date.now(),
-        arrowConfig,
-        textConfig,
-        startCircleConfig: circleConfig,
-        endCircleConfig: { ...circleConfig, radius: 10 },
-      });
+    draw(currentAnnotation) {
+      this.annotations[this.annotations.length - 1] = currentAnnotation;
     },
 
     deleteAnnotation(index, event) {
       event.preventDefault();
       event.stopPropagation();
       this.annotations.splice(index, 1);
-    },
-
-    draw(event) {
-      const stage = this.$refs.stage.getStage();
-      const pos = stage.getPointerPosition();
-
-      if (!this.drawingEnabled) return;
-      if (this.movingEnd) {
-        this.movingEnd.endCircleConfig.x = pos.x;
-        this.movingEnd.endCircleConfig.y = pos.y;
-        this.movingEnd.arrowConfig.points[2] = pos.x;
-        this.movingEnd.arrowConfig.points[3] = pos.y;
-      } else if (this.movingStart) {
-        this.movingStart.startCircleConfig.x = pos.x;
-        this.movingStart.startCircleConfig.y = pos.y;
-        this.movingStart.arrowConfig.points[0] = pos.x;
-        this.movingStart.arrowConfig.points[1] = pos.y;
-      } else if (this.startPoint) {
-        const currentAnnotation = this.annotations[this.annotations.length - 1];
-        currentAnnotation.arrowConfig.points = [
-          this.startPoint.x,
-          this.startPoint.y,
-          pos.x,
-          pos.y,
-        ];
-        currentAnnotation.endCircleConfig.x = pos.x;
-        currentAnnotation.endCircleConfig.y = pos.y;
-      }
-    },
-
-    stopDrawing() {
-      if (!this.drawingEnabled) return;
-      this.startPoint = null;
-      this.movingEnd = null;
-      this.movingStart = null;
     },
 
     toggleEdit(annotation, event) {
@@ -415,7 +219,6 @@ export default {
     onLineMouseout() {
       this.hoveredIndex = null;
     },
-
   },
 };
 </script>
@@ -428,36 +231,6 @@ export default {
 .annotation {
   position: absolute;
   top: 10px;
-}
-
-#save_btn {
-  background-color: #3c8dbc;
-  padding: 5px 10px;
-  border-radius: 3px;
-  border: 1px solid transparent;
-  color: #fff;
-  margin-left: 51rem;
-  margin-top: 1rem;
-}
-
-#enable_btn {
-  background-color: #5cb85c;
-  padding: 5px 10px;
-  font-size: 12px;
-  line-height: 1.5;
-  border-radius: 3px;
-  box-shadow: none;
-  border: 1px solid transparent;
-  color: #fff;
-}
-
-#add_photo_btn {
-  background-color: #3c8dbc;
-  border: 1px solid transparent;
-
-  padding: 10px 10px;
-  color: #fff;
-  margin-left: 50rem;
 }
 
 #edit_btn {
@@ -491,10 +264,6 @@ export default {
   border-radius: 3px;
   color: #ffffff;
   padding: 5px 10px;
-}
-
-.crosshair-cursor {
-  cursor: crosshair;
 }
 
 .annotation {
