@@ -1,0 +1,20 @@
+query SparePartsQuery {
+    product(id: 10400) {
+        image
+        spare_parts(first: 15) {
+            data {
+                article
+                description
+                gid
+                id
+                image
+                name
+                non_current
+                production_status {
+                    name
+                }
+                slug
+            }
+        }
+    }
+}

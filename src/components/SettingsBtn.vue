@@ -23,6 +23,7 @@ export default {
       event.preventDefault();
       event.stopPropagation();
       this.$emit("logAnnotations");
+      this.$emit("annotationSelected", this.selectedAnnotation);
     },
 
     resetAnnotations(event) {
@@ -54,7 +55,6 @@ export default {
     toggleDrawingEnabled(event) {
       event.preventDefault();
       event.stopPropagation();
-
       this.$emit("toggleDrawingEnabled");
     },
   },

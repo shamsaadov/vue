@@ -20,7 +20,6 @@
       @startDrawing="startDrawing"
       @draw="draw"
     />
-
     <table class="annotation">
       <tr>
         <th>Примечания</th>
@@ -57,11 +56,25 @@
             </button>
           </div>
         </td>
-        <td v-for="(product, index) in this.productS">
-          {{ product.image }}
+        <td>
+          <ImageAnnotationWrapper
+            :annotation="annotation"
+            :index="index"
+            @product-selected="updateSelectedProduct"
+          />
         </td>
       </tr>
     </table>
+
+    <AnnotationTable
+      :annotations="annotations"
+      :hoveredIndex="hoveredIndex"
+      @delete-annotation="deleteAnnotation"
+      @toggle-edit="toggleEdit"
+      @start-edit-text="startEditText"
+      @end-edit-text="endEditText"
+      @update-selected-product="updateSelectedProduct"
+    />
   </div>
 </template>
 
@@ -71,6 +84,8 @@ import gql from "graphql-tag";
 
 import SettingsBtn from "./SettingsBtn.vue";
 import Stage from "./Stage.vue";
+import ImageAnnotationWrapper from "./ImageAnnotationWrapper.vue";
+import AnnotationTable from "./AnnotationTable.vue";
 
 const PRODUCTS_QUERY = gql`
   query {
@@ -90,9 +105,12 @@ export default {
   components: {
     SettingsBtn,
     Stage,
+    AnnotationTable,
+    ImageAnnotationWrapper,
   },
   data() {
     return {
+      selectedProduct: null,
       photo: null,
       stageConfig: {
         width: window.innerWidth,
@@ -145,6 +163,15 @@ export default {
   },
 
   methods: {
+    updateSelectedProduct(index, product) {
+      console.log("Выбранный индекс: ", index);
+      console.log("Выбранная запчасть: ", product);
+      if (this.annotations[index]) {
+        this.annotations[index].selectedProduct = product;
+      } else {
+        console.log(`с таким индексом не нашел ${index}`);
+      }
+    },
     loadImage(url) {
       const imageObj = new Image();
       imageObj.src = url;
@@ -158,7 +185,14 @@ export default {
       this.annotations.forEach((annotation, index) => {
         console.log(`x: ${annotation.textConfig.x}`);
         console.log(`y: ${annotation.textConfig.y}`);
-        console.log(`Text: ${annotation.textConfig.text}`);
+        console.log(`Текст примечания: ${annotation.textConfig.text}`);
+        console.log(
+          `Запасная часть: ${
+            this.selectedProduct
+              ? this.selectedProduct.name
+              : "Ничего не выбрано"
+          }`
+        );
       });
     },
 
@@ -179,7 +213,13 @@ export default {
     },
 
     startDrawing(annotation) {
-      this.annotations.push(annotation);
+      if (annotation && typeof annotation === "object") {
+        annotation.selectedProduct = null;
+        this.annotations.push(annotation);
+      } else {
+        let newAnnotation = { selectedProduct: null };
+        this.annotations.push(newAnnotation);
+      }
     },
 
     draw(currentAnnotation) {

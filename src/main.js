@@ -7,6 +7,7 @@ import {
 import { DefaultApolloClient } from "@vue/apollo-composable";
 import App from "./App.vue";
 import VueKonva from "vue-konva";
+import ImageAnnotationWrapper from "./components/ImageAnnotationWrapper.vue";
 
 const httpLink = createHttpLink({
   uri: "http://catalog-mtz.ru/graphql",
