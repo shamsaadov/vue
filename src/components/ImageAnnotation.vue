@@ -4,7 +4,7 @@
     @toggleDrawingEnabled="toggleDrawingEnabled"
     @resetAnnotations="resetAnnotations"
     @logAnnotations="logAnnotations"
-    @loadImage="loadImage"
+    @fileSelected="fileSelected"
   />
 
   <div style="position: relative">
@@ -20,51 +20,6 @@
       @startDrawing="startDrawing"
       @draw="draw"
     />
-    <table class="annotation">
-      <tr>
-        <th>Примечания</th>
-        <th>Запасные части</th>
-      </tr>
-
-      <tr v-for="(annotation, index) in annotations" :key="index">
-        <td :class="{ highlighted: index === hoveredIndex }">
-          <div class="annotation-item">
-            <div style="display: flex">
-              <p
-                v-if="!annotation.editing"
-                @click="startEditText(annotation, $event)"
-              >
-                {{ annotation.textConfig.text }}
-              </p>
-            </div>
-            <input
-              v-if="annotation.editing"
-              type="text"
-              v-model="annotation.textConfig.text"
-              @blur="endEditText(annotation)"
-              @keydown.enter="endEditText(annotation)"
-            />
-            <button id="delete_btn" @click="deleteAnnotation(index, $event)">
-              &#128465;
-            </button>
-            <button
-              id="edit_btn"
-              type="button"
-              @click="toggleEdit(annotation, $event)"
-            >
-              {{ annotation.editing ? "&#128190;" : "&#9998;" }}
-            </button>
-          </div>
-        </td>
-        <td>
-          <ImageAnnotationWrapper
-            :annotation="annotation"
-            :index="index"
-            @product-selected="updateSelectedProduct"
-          />
-        </td>
-      </tr>
-    </table>
 
     <AnnotationTable
       :annotations="annotations"
@@ -81,6 +36,7 @@
 <script>
 import { useQuery } from "@vue/apollo-composable";
 import gql from "graphql-tag";
+import axios from "axios";
 
 import SettingsBtn from "./SettingsBtn.vue";
 import Stage from "./Stage.vue";
@@ -119,7 +75,7 @@ export default {
       imageConfig: {
         x: 500,
         y: 0,
-        image: null,
+        image: this.selectedFileUrl,
       },
       drawingEnabled: true,
       hoveredIndex: null,
@@ -142,15 +98,13 @@ export default {
         points: [0, 0, 0, 0],
       },
       productS: [],
+      selectedFileUrl: null,
     };
   },
 
   mounted() {
     const { result, loading, error } = useQuery(PRODUCTS_QUERY);
     this.productS = result;
-    this.loadImage(
-      "http://catalog-mtz.ru/api/storage/media/images/q4pigMWyPAxixBcyYgBNnxhZfGp8X41FxFNZBZ8C.jpeg?expires=1683898683&signature=9fbef924b0c8f9284ed8a31e1507f64889083d8152a578ba1a388342fe779bb0"
-    );
     this.loadImage();
   },
 
@@ -181,19 +135,46 @@ export default {
       };
     },
 
+    fileSelected(file) {
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        this.selectedFileUrl = e.target.result;
+        this.loadImage(this.selectedFileUrl);
+      };
+
+      reader.readAsDataURL(file);
+      this.selectedFile = file;
+    },
+
     logAnnotations() {
-      this.annotations.forEach((annotation, index) => {
-        console.log(`x: ${annotation.textConfig.x}`);
-        console.log(`y: ${annotation.textConfig.y}`);
-        console.log(`Текст примечания: ${annotation.textConfig.text}`);
-        console.log(
-          `Запасная часть: ${
-            this.selectedProduct
-              ? this.selectedProduct.name
-              : "Ничего не выбрано"
-          }`
-        );
+      const formData = new FormData();
+      const notes = this.annotations.map((annotation) => {
+        return {
+          x1: annotation.startCircleConfig.x,
+          y1: annotation.startCircleConfig.y,
+          x2: annotation.endCircleConfig.x,
+          y2: annotation.endCircleConfig.y,
+          name: annotation.textConfig.text,
+          sparePartId: this.selectedProduct ? this.selectedProduct.id : 5556,
+        };
       });
+
+      formData.append("image", this.selectedFile);
+      formData.append("input", JSON.stringify({ notes }));
+
+      axios
+        .post("http://localhost/admin/products/10399/image-notes", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        })
+        .then((response) => {
+          console.log(response.data);
+        })
+        .catch((error) => {
+          console.error(error);
+        });
     },
 
     resetAnnotations() {
@@ -341,5 +322,11 @@ th {
   border: 1px solid #dddddd;
   text-align: left;
   padding: 8px;
+}
+#img_view {
+  position: absolute;
+  bottom: 60rem;
+  left: 40rem;
+  width: 600px;
 }
 </style>

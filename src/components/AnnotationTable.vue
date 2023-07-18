@@ -72,3 +72,10 @@ export default {
   },
 };
 </script>
+
+<style>
+.annotation {
+  position: absolute;
+  top: 10px;
+}
+</style>

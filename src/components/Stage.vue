@@ -49,15 +49,13 @@
         ></v-text>
       </v-layer>
     </v-stage>
-    <div>
-      <img v-if="photo" :src="photo" alt="Изображение" />
-    </div>
   </div>
 </template>
 
 <script>
 export default {
   props: {
+    selectedFileUrl: String,
     annotations: {
       type: Array,
       default: () => [],

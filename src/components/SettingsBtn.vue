@@ -1,12 +1,14 @@
 <template>
-  <div id="settings_btn">
-    <button id="enable_btn" class="btn" @click="toggleDrawingEnabled">
-      {{ drawingEnabled ? "Выключить" : "Добавить" }}
+  <div>
+    <button id="save_btn" @click="toggleDrawingEnabled">
+      {{
+        drawingEnabled ? "Выключить редактирование" : "Включить редактирование"
+      }}
     </button>
     <button id="reset_btn" @click="resetAnnotations">Сбросить</button>
+    <button id="save_btn" @click="logAnnotations">Сохранить</button>
+    <input id="add_photo_btn" type="file" @change="addPhoto" />
   </div>
-  <button id="add_photo_btn" @click="addPhoto">Добавить фото</button>
-  <button id="save_btn" @click="logAnnotations">Сохранить</button>
 </template>
 
 <script>
@@ -21,40 +23,22 @@ export default {
   methods: {
     logAnnotations(event) {
       event.preventDefault();
-      event.stopPropagation();
       this.$emit("logAnnotations");
-      this.$emit("annotationSelected", this.selectedAnnotation);
     },
 
     resetAnnotations(event) {
       event.preventDefault();
-      event.stopPropagation();
-
       this.$emit("resetAnnotations");
     },
 
     addPhoto(event) {
       event.preventDefault();
-      event.stopPropagation();
-      const input = document.createElement("input");
-      input.type = "file";
-      input.accept = "image/*";
-      input.onchange = (event) => {
-        const file = event.target.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            this.$emit("loadImage", e.target.result);
-          };
-          reader.readAsDataURL(file);
-        }
-      };
-      input.click();
+      const file = event.target.files[0];
+      this.$emit("fileSelected", file);
     },
 
     toggleDrawingEnabled(event) {
       event.preventDefault();
-      event.stopPropagation();
       this.$emit("toggleDrawingEnabled");
     },
   },
@@ -87,6 +71,7 @@ export default {
   background-color: #3c8dbc;
   border: 1px solid transparent;
   padding: 10px 10px;
+  margin-top: 1rem;
   color: #fff;
   margin-left: 50rem;
 }
@@ -98,5 +83,56 @@ export default {
   border-radius: 3px;
   color: #ffffff;
   padding: 5px 10px;
+}
+
+.input-file {
+  position: relative;
+  display: inline-block;
+}
+.input-file span {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  outline: none;
+  text-decoration: none;
+  font-size: 14px;
+  vertical-align: middle;
+  color: rgb(255 255 255);
+  text-align: center;
+  border-radius: 4px;
+  background-color: #419152;
+  line-height: 22px;
+  height: 40px;
+  padding: 10px 20px;
+  box-sizing: border-box;
+  border: none;
+  margin: 0;
+  transition: background-color 0.2s;
+}
+.input-file input[type="file"] {
+  position: absolute;
+  z-index: -1;
+  opacity: 0;
+  display: block;
+  width: 0;
+  height: 0;
+}
+
+/* Focus */
+.input-file input[type="file"]:focus + span {
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Hover/active */
+.input-file:hover span {
+  background-color: #59be6e;
+}
+.input-file:active span {
+  background-color: #2e703a;
+}
+
+/* Disabled */
+.input-file input[type="file"]:disabled + span {
+  background-color: #eee;
 }
 </style>
